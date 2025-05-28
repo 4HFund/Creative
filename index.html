@@ -1171,7 +1171,7 @@
     </div>
 
     <!-- Music Toggle -->
-    <button class="music-toggle" onclick="toggleMusic()" title="Toggle ambient sound">
+    <button class="music-toggle" onclick="toggleMusic()" title="Play background music">
         🎵
     </button>
 
@@ -1388,17 +1388,17 @@
                 <div class="contact-item">
                     <strong>📍 Address</strong>
                     The Foundery Church<br>
-                    1340 Washington Pike 
+                    1340 Washington Pike<br>
                     Wellsburg, WV 26070
                 </div>
                 <div class="contact-item">
                     <strong>✉️ Email</strong>
-                    creative@thefoundery.church
+                    creative@foundrychurch.com
                 </div>
                 <div class="contact-item">
                     <strong>⏰ Service Times</strong>
-                    Sundays at 10:30 AM
-                    Life Groups at 9:15 AM
+                    Life Groups: 9:15 AM<br>
+                    Sunday Service: 10:30 AM
                 </div>
             </div>
             
@@ -1439,64 +1439,71 @@
             observer.observe(el);
         });
 
-        // Enhanced Music Toggle with Web Audio API
+        // Simple Music Toggle with Your Custom Song
         let isPlaying = false;
-        let audioContext = null;
-        let oscillators = [];
-        let gainNodes = [];
+        let audio = null;
 
         function toggleMusic() {
-            if (!audioContext) {
-                try {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                } catch (e) {
-                    console.log('Web Audio API not supported');
-                    return;
-                }
+            if (!audio) {
+                // Name your audio file: foundery-music.mp3
+                audio = new Audio('foundery-music.mp3'); // <-- Name your file "foundery-music.mp3"
+                
+                // Set volume (0.0 to 1.0)
+                audio.volume = 0.4;
+                
+                // Loop the song
+                audio.loop = true;
+                
+                // Handle errors gracefully
+                audio.onerror = function() {
+                    console.log('Could not load audio file');
+                    showNotification('Audio file not found. Please make sure "foundery-music.mp3" is in the same folder as your website.', 'error');
+                };
+                
+                // Show loading state
+                const toggleBtn = document.querySelector('.music-toggle');
+                audio.onloadstart = function() {
+                    if (toggleBtn) toggleBtn.innerHTML = '⏳';
+                };
+                
+                // Ready to play
+                audio.oncanplay = function() {
+                    if (toggleBtn) toggleBtn.innerHTML = '🎵';
+                };
             }
 
+            const toggleBtn = document.querySelector('.music-toggle');
             if (!isPlaying) {
-                // Create ambient soundscape
-                const frequencies = [220, 330, 440, 550]; // A3, E4, A4, C#5
-                
-                frequencies.forEach((freq, index) => {
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
-                    
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-                    oscillator.type = index % 2 === 0 ? 'sine' : 'triangle';
-                    gainNode.gain.setValueAtTime(0.02 + (index * 0.01), audioContext.currentTime);
-                    
-                    // Add subtle vibrato
-                    const lfo = audioContext.createOscillator();
-                    const lfoGain = audioContext.createGain();
-                    lfo.connect(lfoGain);
-                    lfoGain.connect(oscillator.frequency);
-                    lfo.frequency.setValueAtTime(2 + index * 0.5, audioContext.currentTime);
-                    lfoGain.gain.setValueAtTime(3, audioContext.currentTime);
-                    
-                    oscillator.start();
-                    lfo.start();
-                    
-                    oscillators.push(oscillator);
-                    gainNodes.push(gainNode);
+                audio.play().then(() => {
+                    isPlaying = true;
+                    if (toggleBtn) {
+                        toggleBtn.style.color = 'var(--crimson)';
+                        toggleBtn.innerHTML = '🔊';
+                        toggleBtn.title = 'Stop background music';
+                    }
+                }).catch(error => {
+                    console.log('Playback failed:', error);
+                    showNotification('Could not play audio. Click to try again.', 'error');
                 });
-                
-                isPlaying = true;
-                document.querySelector('.music-toggle').style.color = 'var(--crimson)';
-                document.querySelector('.music-toggle').innerHTML = '🔊';
             } else {
-                oscillators.forEach(osc => osc.stop());
-                oscillators = [];
-                gainNodes = [];
+                audio.pause();
                 isPlaying = false;
-                document.querySelector('.music-toggle').style.color = 'var(--gold)';
-                document.querySelector('.music-toggle').innerHTML = '🎵';
+                if (toggleBtn) {
+                    toggleBtn.style.color = 'var(--gold)';
+                    toggleBtn.innerHTML = '🎵';
+                    toggleBtn.title = 'Play background music';
+                }
             }
         }
+
+        // Optional: Add keyboard shortcut to toggle music (spacebar)
+        document.addEventListener('keydown', function(e) {
+            // Only if spacebar is pressed and not in a form field
+            if (e.code === 'Space' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+                e.preventDefault();
+                toggleMusic();
+            }
+        });
 
         // Enhanced Form Submission
         function submitForm() {
